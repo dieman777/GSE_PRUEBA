@@ -1,0 +1,6 @@
+@PRUEBA_GSE_HostAddress = http://localhost:5090
+
+GET {{PRUEBA_GSE_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
