@@ -8,7 +8,8 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copiamos el archivo .csproj y restauramos
-COPY PRUEBA_GSE.csproj ./
+COPY PRUEBA_GSE/PRUEBA_GSE.csproj ./PRUEBA_GSE/
+WORKDIR /src/PRUEBA_GSE
 RUN dotnet restore "PRUEBA_GSE.csproj"
 
 # Copiamos el resto del código y compilamos
