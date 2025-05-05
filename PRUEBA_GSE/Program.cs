@@ -1,6 +1,9 @@
 using MongoDB.Driver;
 using PRUEBA_GSE;
 using PRUEBA_GSE.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +20,28 @@ builder.Services.Configure<MongoDBSettings>(
 builder.Services.AddSingleton<MongoContextDB>();
 //Serivio del Token creado
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
+    {
+        var config = builder.Configuration;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = config["Jwt:Issuer"],
+            ValidAudience = config["Jwt:Issuer"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!))
+        };
+    });
+builder.Services.AddAuthorization();
+
+
 //Servicio de los DTO
 builder.Services.AddScoped<UsuariosService>();
+builder.Services.AddScoped<VehiculosService>();
+builder.Services.AddScoped<ServicioVehiculoService>();
+builder.Services.AddScoped<ClienteService>();
 
 
 var app = builder.Build();
@@ -29,6 +52,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseAuthentication();//Se agrega estaa parte ya que hace parte de los tokens al validar el login
 
 app.UseHttpsRedirection();
 

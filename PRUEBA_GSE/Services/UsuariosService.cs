@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 using PRUEBA_GSE.Controllers;
 using PRUEBA_GSE.Models;
 using System.Security.Cryptography;
@@ -33,10 +34,11 @@ namespace PRUEBA_GSE.Services
             return listaUsuarios.contrasenia == EncriptarContrasenia(contrasenia);
         }
 
-        public async Task SetUsuarios(Usuarios usuarioN)
+        public async Task<Usuarios?> SetUsuarios(Usuarios usuarioN)
         {
             usuarioN.contrasenia = EncriptarContrasenia(usuarioN.contrasenia);
             await _usuarios.InsertOneAsync(usuarioN);
+            return usuarioN;
         }
 
 

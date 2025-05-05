@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Any;
 using PRUEBA_GSE.Models;
 using PRUEBA_GSE.Services;
 using PRUEBA_GSE.Templates;
@@ -9,12 +10,19 @@ namespace PRUEBA_GSE.Controllers
     public class UsuariosController: ControllerBase
     {
         private readonly UsuariosService _usuariosService;
+        private readonly VehiculosService _vehiculosService;
+        private readonly ServicioVehiculoService _servicioVehiculoService;
         private readonly TokenService _tokenService;
 
 
-        public UsuariosController(UsuariosService usuariosService, TokenService tokenService)
+        public UsuariosController(UsuariosService usuariosService, 
+            VehiculosService vehiculosService, 
+            ServicioVehiculoService servicioVehiculoService, 
+            TokenService tokenService)
         { 
             _usuariosService = usuariosService;
+            _vehiculosService = vehiculosService;
+            _servicioVehiculoService = servicioVehiculoService;
             _tokenService = tokenService;
         }
 
@@ -35,7 +43,11 @@ namespace PRUEBA_GSE.Controllers
                 nombre = usuariosRequest.nombre
             };
 
-            await _usuariosService.SetUsuarios(listarUsuario);
+            //Insertar usuario y obtener el id para luego crear los datos predefinidos o colecciones
+            var usuarioCreado = await _usuariosService.SetUsuarios(listarUsuario);
+            await this.InsertarDatosPredefinidos(usuarioCreado.Id);
+
+
             return Ok(new { mensaje = "Usuario registrado"});
         }
 
@@ -47,12 +59,73 @@ namespace PRUEBA_GSE.Controllers
             if (!esValido)
             { 
                 //Se devuelve un mensaje negativo
-                return Unauthorized(new { mensaje = "Las credenciales no son corretas." });
+                return Unauthorized(new { mensaje = "Las credenciales no son correctas." });
             }
             //Se crea y devuleve token
             var usuarioToken = _tokenService.CrearToken(usuariosLoginRequest.usuario);
             return Ok(new { usuarioToken });
         }
-        
+
+        public async Task InsertarDatosPredefinidos(string usuarioCreadoId)
+        {
+            try
+            {
+                //1----------------------------------------------------------------------------------
+                await this.GuardarServicioVehiculo();
+                //2----------------------------------------------------------------------------------
+                //Se optiene un modelo random pra registrar luego
+                var random_modelos = new Random();
+                var modelo_seleccionado = random_modelos.Next(1974, 2026).ToString();
+                //3----------------------------------------------------------------------------------
+                //Se asignan 2 valores de acuerdo a lo que está registrado en la colección ServicioVehiculo
+                string[] sv_opciones = { "A1", "B1", "C1" };
+                var random_sv_opciones = new Random();
+                var sv_selecionado = sv_opciones[random_sv_opciones.Next(sv_opciones.Length)];
+                //4----------------------------------------------------------------------------------
+                var otroVehiculo = new Vehiculos
+                {
+                    modelo = modelo_seleccionado,
+                    noPlaca = "AAA000",
+                    servicioVehiculoId = await this.ObtenerServicioVehiculoId(sv_selecionado),
+                    formaPago = "Contado",
+                    usuarioId = usuarioCreadoId
+                };
+
+                await _vehiculosService.SetVehiculos(otroVehiculo);
+            } catch (Exception exc)
+            {
+                throw new Exception($"Se presentó un erro al insertar datos predefinidos: {exc}");
+            }
+        }
+
+        private async Task<string> ObtenerServicioVehiculoId(string descripcion){
+            var servicioV = await _servicioVehiculoService.GetServicioVehiculoAsync(descripcion);
+
+            if (servicioV == null)
+            {
+                throw new Exception("El servicio de vehículo no existe.");
+            }
+
+            return servicioV.id;
+        }
+
+
+        private async Task GuardarServicioVehiculo()
+        {
+            /*var serviciosVehiculo = new ServicioVehiculo
+            {
+                descripcion = "Público"
+            };*/
+
+            var lista_servicioVehiculos = new List<ServicioVehiculo>
+            {
+                new ServicioVehiculo{ descripcion = "A1"},
+                new ServicioVehiculo{ descripcion = "B1"},
+                new ServicioVehiculo{ descripcion = "C1"}
+            };
+
+
+            await _servicioVehiculoService.SetServicioVehiculo(lista_servicioVehiculos);
+        }
     }
 }
