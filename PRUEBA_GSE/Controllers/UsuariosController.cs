@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Any;
 using PRUEBA_GSE.Models;
 using PRUEBA_GSE.Services;
 using PRUEBA_GSE.Templates;
+using System.Runtime.CompilerServices;
 
 namespace PRUEBA_GSE.Controllers
 {
@@ -12,17 +13,20 @@ namespace PRUEBA_GSE.Controllers
         private readonly UsuariosService _usuariosService;
         private readonly VehiculosService _vehiculosService;
         private readonly ServicioVehiculoService _servicioVehiculoService;
+        private readonly TipoVehiculoService _tipoVehiculoService;
         private readonly TokenService _tokenService;
 
 
         public UsuariosController(UsuariosService usuariosService, 
             VehiculosService vehiculosService, 
-            ServicioVehiculoService servicioVehiculoService, 
+            ServicioVehiculoService servicioVehiculoService,
+            TipoVehiculoService tipoVehiculoService,
             TokenService tokenService)
         { 
             _usuariosService = usuariosService;
             _vehiculosService = vehiculosService;
             _servicioVehiculoService = servicioVehiculoService;
+            _tipoVehiculoService = tipoVehiculoService;
             _tokenService = tokenService;
         }
 
@@ -45,7 +49,7 @@ namespace PRUEBA_GSE.Controllers
 
             //Insertar usuario y obtener el id para luego crear los datos predefinidos o colecciones
             var usuarioCreado = await _usuariosService.SetUsuarios(listarUsuario);
-            await this.InsertarDatosPredefinidos(usuarioCreado.Id);
+            await this.InsertarDatosPredefinidos(usuarioCreado.Id, usuariosRequest.noPlaca);
 
 
             return Ok(new { mensaje = "Usuario registrado"});
@@ -66,29 +70,39 @@ namespace PRUEBA_GSE.Controllers
             return Ok(new { usuarioToken });
         }
 
-        public async Task InsertarDatosPredefinidos(string usuarioCreadoId)
+        private async Task InsertarDatosPredefinidos(string usuarioCreadoId, string noPlaca)
         {
             try
             {
                 //1----------------------------------------------------------------------------------
-                await this.GuardarServicioVehiculo();
+                //Se asignan 2 valores de acuerdo a lo que está registrado en la colección TipoVehiculo 
+                string[] tiposv_opciones = { "Particular", "Público" };
+                var random_tipos_opciones = new Random();
+                var tipo_selecionado = tiposv_opciones[random_tipos_opciones.Next(tiposv_opciones.Length)];
                 //2----------------------------------------------------------------------------------
                 //Se optiene un modelo random pra registrar luego
                 var random_modelos = new Random();
                 var modelo_seleccionado = random_modelos.Next(1974, 2026).ToString();
                 //3----------------------------------------------------------------------------------
-                //Se asignan 2 valores de acuerdo a lo que está registrado en la colección ServicioVehiculo
+                //Se asignan 3 valores de acuerdo a lo que está registrado en la colección ServicioVehiculo
                 string[] sv_opciones = { "A1", "B1", "C1" };
                 var random_sv_opciones = new Random();
                 var sv_selecionado = sv_opciones[random_sv_opciones.Next(sv_opciones.Length)];
                 //4----------------------------------------------------------------------------------
+                //Se asignan 2 valores para forma de pago
+                string[] fp_opciones = { "Contado", "Tío paco" };
+                var random_fp_opciones = new Random();
+                var fp_selecionado = fp_opciones[random_fp_opciones.Next(fp_opciones.Length)];
+
+                //5
                 var otroVehiculo = new Vehiculos
                 {
                     modelo = modelo_seleccionado,
-                    noPlaca = "AAA000",
+                    noPlaca = noPlaca,
+                    tipoVehiculoId = await this.ObtenerTipoVehiculoId(tipo_selecionado),
                     servicioVehiculoId = await this.ObtenerServicioVehiculoId(sv_selecionado),
-                    formaPago = "Contado",
-                    usuarioId = usuarioCreadoId
+                    usuarioId = usuarioCreadoId,
+                    formaPago = fp_selecionado
                 };
 
                 await _vehiculosService.SetVehiculos(otroVehiculo);
@@ -109,23 +123,15 @@ namespace PRUEBA_GSE.Controllers
             return servicioV.id;
         }
 
-
-        private async Task GuardarServicioVehiculo()
+        private async Task<string> ObtenerTipoVehiculoId(string descripcion)
         {
-            /*var serviciosVehiculo = new ServicioVehiculo
+            var tipoV = await _tipoVehiculoService.GetTipoVehiculo(descripcion);
+
+            if (tipoV == null)
             {
-                descripcion = "Público"
-            };*/
-
-            var lista_servicioVehiculos = new List<ServicioVehiculo>
-            {
-                new ServicioVehiculo{ descripcion = "A1"},
-                new ServicioVehiculo{ descripcion = "B1"},
-                new ServicioVehiculo{ descripcion = "C1"}
-            };
-
-
-            await _servicioVehiculoService.SetServicioVehiculo(lista_servicioVehiculos);
+                throw new Exception("El tipo de vehículo no existe");
+            }
+            return tipoV.id;
         }
     }
 }

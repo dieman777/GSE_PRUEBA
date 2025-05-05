@@ -28,7 +28,6 @@ namespace PRUEBA_GSE.Controllers
                 direccion = clienteRequest.direccion,
                 telefono = clienteRequest.telefono,
                 correo = clienteRequest.correo
-
             };
 
             await _clienteService.SetClientes(selecion);

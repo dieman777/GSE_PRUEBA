@@ -11,5 +11,7 @@ namespace PRUEBA_GSE.Templates
         public string contrasenia { get; set; }
         [Required]
         public string nombre { get; set; }
+        [Required]
+        public string noPlaca { get; set; }
     }
 }

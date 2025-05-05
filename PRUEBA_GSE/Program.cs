@@ -35,13 +35,15 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
         };
     });
 builder.Services.AddAuthorization();
-
+    
 
 //Servicio de los DTO
 builder.Services.AddScoped<UsuariosService>();
 builder.Services.AddScoped<VehiculosService>();
 builder.Services.AddScoped<ServicioVehiculoService>();
 builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<PagoSevice>();
+builder.Services.AddScoped<TipoVehiculoService>();
 
 
 var app = builder.Build();
@@ -54,6 +56,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();//Se agrega estaa parte ya que hace parte de los tokens al validar el login
+
+app.UseStatusCodePages(async xon => {
+    var respuesta = xon.HttpContext.Response;
+    if (respuesta.StatusCode == 401)
+    {
+        await respuesta.WriteAsJsonAsync(new { mensaje = "No autorizado, debe iniciar sesión en Login" });
+    }
+    else if (respuesta.StatusCode == 403)
+    {
+        await respuesta.WriteAsJsonAsync(new { mensaje = "No tiene permisos" });
+    }
+});
+
 
 app.UseHttpsRedirection();
 
