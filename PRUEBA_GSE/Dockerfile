@@ -14,7 +14,7 @@ RUN dotnet restore "PRUEBA_GSE.csproj"
 
 # Copiamos el resto del código y compilamos
 COPY . .
-RUN dotnet build "PRUEBA_GSE.csproj" -c Release -o /app/build
+RUN mkdir -p /app/build && dotnet build "PRUEBA_GSE.csproj" -c Release -o /app/build
 
 # Publicamos
 FROM build AS publish
